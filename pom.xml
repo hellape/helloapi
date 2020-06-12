@@ -43,6 +43,106 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>create-distribution</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<descriptors>
+								<descriptor>assembly/jar.xml</descriptor>
+							</descriptors>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>rpm-maven-plugin</artifactId>
+				<version>2.2.0</version>
+				<extensions>true</extensions>
+				<executions>
+					<execution>
+						<id>demo-rpm</id>
+						<goals>
+							<goal>rpm</goal>
+						</goals>
+						<configuration>
+							<name>helloapi</name>
+							<needarch>x86_64</needarch>
+							<targetOS>linux</targetOS>
+							<defaultUsername>root</defaultUsername>
+							<defaultGroupname>root</defaultGroupname>
+							<group>Application/HelloApi</group>
+                            <requires>
+                                <require>java-1.8.0-openjdk-devel</require>
+                            </requires>
+							<requiresPost>
+								<require>unzip</require>
+							</requiresPost>
+							<mappings>
+								<mapping>
+									<directory>/opt/helloapi</directory>
+									<dirmode>775</dirmode>
+									<username>root</username>
+									<groupname>root</groupname>
+								</mapping>
+								<mapping>
+									<directory>/opt/helloapi</directory>
+									<filemode>750</filemode>
+									<username>root</username>
+									<groupname>root</groupname>
+									<directoryIncluded>false</directoryIncluded>
+									<sources>
+										<source>
+											<location>src/main/scripts/startup.sh</location>
+										</source>
+										<source>
+											<location>src/main/scripts/shutdown.sh</location>
+										</source>
+									</sources>
+								</mapping>
+								<mapping>
+									<directory>/tmp</directory>
+									<filemode>664</filemode>
+									<username>root</username>
+									<groupname>root</groupname>
+									<directoryIncluded>false</directoryIncluded>
+									<sources>
+										<source>
+											<location>target/helloapi-${project.version}-jar.zip</location>
+										</source>
+									</sources>
+								</mapping>
+							</mappings>
+							<postinstallScriptlet>
+								<script>
+									echo "unzip archive containing jar"
+									unzip /tmp/helloapi-${project.version}-jar.zip -d /tmp/
+									echo "move jar to /opt/"
+									mv /tmp/helloapi-${project.version}/target/helloapi-${project.version}.jar /opt/helloapi/helloapi.jar
+                                    rm -rf /tmp/helloapi-${project.version}/
+									echo "Start application"
+									/opt/helloapi/startup.sh
+								</script>
+							</postinstallScriptlet>
+							<preremoveScriptlet>
+								<script>
+									echo "Stop application"
+									/opt/helloapi/shutdown.sh
+									echo "remove jar"
+									rm /opt/helloapi/helloapi.jar
+								</script>
+							</preremoveScriptlet>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
